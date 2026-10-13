@@ -28,3 +28,13 @@ PRD: Notion › Second Brain › Projects › Control Board.
 - **Touch drag-and-drop:** not built. On phones, cards move with **Start / Done ✓ / ←** buttons; drag works on desktop. Reason: native HTML drag doesn't work on touch, and a touch-drag library adds weight for little gain at this size.
 - **No Tailwind:** plain CSS tokens (Style G). Reason: one small screen set; tokens map 1:1 to the Style Library entry.
 - **Crash screen (S5):** deferred to sprint 2.
+
+## Sprint 2 (Oct 13, 2026) — feedback pass
+| # | Change | Status |
+|---|---|---|
+| 1 | 45-min timer on **both** Plan and Do tabs (label shows which block) | Done |
+| 2 | "Dump it — sort later": unsorted inbox (`type: 'inbox'`), Enter = dump, sort with Can / Can't | Done |
+| 3 | Brown noise while the timer runs (generated in Web Audio, no file/network), on/off toggle remembered | Done |
+| 4 | Mobile: kanban shows one column with To Do / Doing / Done tabs; item actions wrap under text; 44px targets; tighter spacing ≤ 480px | Done |
+
+Notes: browsers block autoplay, so if the app reloads mid-block the timer shows **Resume sound**. Storage key unchanged (`controlboard:v1`); old data loads as-is.

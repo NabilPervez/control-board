@@ -21,6 +21,12 @@ describe('storage', () => {
 })
 
 describe('items and cards', () => {
+  it('dumps to inbox then sorts later', () => {
+    let s = S.addItem(S.emptyState(), 'Random worry', 'inbox')
+    expect(s.items[0].type).toBe('inbox')
+    s = S.updateItem(s, s.items[0].id, { type: 'cant' })
+    expect(s.items[0].type).toBe('cant')
+  })
   it('ignores blank input', () => {
     expect(S.addItem(S.emptyState(), '   ', 'can').items).toHaveLength(0)
   })

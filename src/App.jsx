@@ -4,7 +4,7 @@ import * as S from './store.js'
 
 const COLS = [
   { id: 'todo', label: 'To Do' },
-  { id: 'doing', label: 'In Progress' },
+  { id: 'doing', label: 'In Progress', short: 'Doing' },
   { id: 'done', label: 'Done' },
 ]
 
@@ -54,6 +54,7 @@ export default function App() {
       </header>
 
       <main>
+        <Timer mode={tab} />
         {tab === 'plan' ? (
           <Plan state={state} act={act} withUndo={withUndo} showToast={showToast} />
         ) : (
@@ -89,6 +90,7 @@ function Plan({ state, act, withUndo, showToast }) {
   const [text, setText] = useState('')
   const [showCant, setShowCant] = useState(false)
   const inputRef = useRef(null)
+  const inbox = state.items.filter((i) => i.type === 'inbox')
   const can = state.items.filter((i) => i.type === 'can')
   const cant = state.items.filter((i) => i.type === 'cant' && !i.released)
   const released = state.items.filter((i) => i.type === 'cant' && i.released)
@@ -110,15 +112,28 @@ function Plan({ state, act, withUndo, showToast }) {
           ref={inputRef}
           rows={2}
           value={text}
-          placeholder="What’s on your mind?"
+          enterKeyHint="send"
+          placeholder="What’s on your mind? Enter to dump, sort later."
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); add('can') } }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); add('inbox') } }}
         />
-        <div className="row">
-          <button className="btn primary" onClick={() => add('can')}>I can control this</button>
-          <button className="btn ghost" onClick={() => add('cant')}>I can’t</button>
+        <div className="dump-actions">
+          <button className="btn primary wide" onClick={() => add('inbox')}>Dump it — sort later</button>
+          <button className="btn soft" onClick={() => add('can')}>Can control</button>
+          <button className="btn ghost" onClick={() => add('cant')}>Can’t</button>
         </div>
       </div>
+
+      {inbox.length > 0 && (
+        <>
+          <h2>To sort <span className="count">{inbox.length}</span></h2>
+          <ul className="list">
+            {inbox.map((i) => (
+              <ItemRow key={i.id} item={i} act={act} withUndo={withUndo} />
+            ))}
+          </ul>
+        </>
+      )}
 
       <h2>Can control <span className="count">{can.length}</span></h2>
       {can.length === 0 && <p className="empty">Nothing yet. Dump a thought above and tap “I can control this.”</p>}
@@ -168,7 +183,12 @@ function ItemRow({ item, act, withUndo, onAction, cards = [] }) {
         </button>
       )}
       <div className="item-actions">
-        {item.type === 'can' ? (
+        {item.type === 'inbox' ? (
+          <>
+            <button className="chip strong" onClick={() => act((s) => S.updateItem(s, item.id, { type: 'can' }))}>Can</button>
+            <button className="chip" onClick={() => act((s) => S.updateItem(s, item.id, { type: 'cant' }))}>Can’t</button>
+          </>
+        ) : item.type === 'can' ? (
           <>
             <button className="chip strong" onClick={onAction}>+ Action</button>
             <button className="chip" onClick={() => act((s) => S.updateItem(s, item.id, { type: 'cant' }))} title="Move to Let it go">↓</button>
@@ -190,22 +210,31 @@ function Do({ state, act, withUndo }) {
   const [text, setText] = useState('')
   const [drag, setDrag] = useState(null)
   const [over, setOver] = useState(null)
+  const [view, setView] = useState(() => (S.column(state, 'doing').length ? 'doing' : 'todo'))
   const doneCount = S.column(state, 'done').length
 
   return (
     <section className="do">
-      <Timer />
       <form className="quick" onSubmit={(e) => { e.preventDefault(); act((s) => S.addCard(s, text)); setText('') }}>
         <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Quick-add an action" aria-label="New action" />
         <button className="btn primary" disabled={!text.trim()}>Add</button>
       </form>
+
+      <div className="seg" role="tablist" aria-label="Columns">
+        {COLS.map((col) => (
+          <button key={col.id} role="tab" aria-selected={view === col.id}
+            className={view === col.id ? 'on' : ''} onClick={() => setView(col.id)}>
+            {col.short ? <><span className="full">{col.label}</span><span className="short">{col.short}</span></> : col.label} <span className="count">{S.column(state, col.id).length}</span>
+          </button>
+        ))}
+      </div>
 
       <div className="board">
         {COLS.map((col, ci) => {
           const cards = S.column(state, col.id)
           return (
             <div key={col.id}
-              className={`col ${over === col.id ? 'over' : ''}`}
+              className={`col ${over === col.id ? 'over' : ''} ${view === col.id ? 'active' : ''}`}
               onDragOver={(e) => { e.preventDefault(); setOver(col.id) }}
               onDragLeave={() => setOver(null)}
               onDrop={(e) => { e.preventDefault(); if (drag) act((s) => S.moveCard(s, drag, col.id)); setDrag(null); setOver(null) }}>
@@ -239,12 +268,16 @@ function Do({ state, act, withUndo }) {
   )
 }
 
-/* 45-minute focus timer (wall-clock, D6 chime, D9 wake lock) */
+/* 45-minute focus block for Plan and Do (wall-clock, D6 chime, D9 wake lock, brown noise) */
 const BLOCK = 45 * 60 * 1000
-function Timer() {
+function Timer({ mode }) {
   const [endAt, setEndAt] = useState(() => Number(safeGet('controlboard:timer')) || null)
+  const [noiseOn, setNoiseOn] = useState(() => safeGet('controlboard:noise') !== 'off')
+  const [playing, setPlaying] = useState(false)
   const [now, setNow] = useState(Date.now())
   const lock = useRef(null)
+  const running = !!endAt
+
   useEffect(() => {
     if (!endAt) return
     const t = setInterval(() => setNow(Date.now()), 1000)
@@ -255,28 +288,89 @@ function Timer() {
     if (endAt && 'wakeLock' in navigator) navigator.wakeLock.request('screen').then((l) => (lock.current = l)).catch(() => {})
     else lock.current?.release?.()
   }, [endAt])
+  useEffect(() => { safeSet('controlboard:noise', noiseOn ? 'on' : 'off') }, [noiseOn])
+  // Noise follows timer + toggle. Browsers need a tap to start audio, so after a reload
+  // a running timer shows a "Resume sound" button instead of autoplaying.
+  useEffect(() => {
+    if (!running || !noiseOn) { brown.stop(); setPlaying(false) }
+  }, [running, noiseOn])
+  useEffect(() => () => brown.stop(), [])
+
   const left = endAt ? Math.max(0, endAt - now) : BLOCK
   useEffect(() => {
-    if (endAt && left === 0) { chime(); setEndAt(null) }
+    if (endAt && left === 0) { brown.stop(); setPlaying(false); chime(); setEndAt(null) }
   }, [left, endAt])
+
+  const start = () => {
+    setEndAt(Date.now() + BLOCK)
+    if (noiseOn) { brown.start(); setPlaying(true) }
+  }
+  const toggleNoise = () => {
+    if (noiseOn) { setNoiseOn(false) }
+    else { setNoiseOn(true); if (running) { brown.start(); setPlaying(true) } }
+  }
   const mm = String(Math.floor(left / 60000)).padStart(2, '0')
   const ss = String(Math.floor((left % 60000) / 1000)).padStart(2, '0')
   const pct = 1 - left / BLOCK
   return (
-    <div className="timer card">
+    <div className={`timer card ${running ? 'running' : ''}`}>
       <div className="ring" style={{ '--p': pct }} aria-hidden />
-      <div>
-        <p className="eyebrow">45-minute block</p>
+      <div className="timer-main">
+        <p className="eyebrow">45-min {mode === 'plan' ? 'Plan' : 'Do'} block</p>
         <p className="time" aria-live="polite">{mm}:{ss}</p>
       </div>
-      {endAt ? (
-        <button className="btn ghost" onClick={() => setEndAt(null)}>Stop</button>
-      ) : (
-        <button className="btn primary" onClick={() => setEndAt(Date.now() + BLOCK)}>Start</button>
-      )}
+      <div className="timer-btns">
+        <button className={`chip ${noiseOn ? 'strong' : ''}`} aria-pressed={noiseOn} onClick={toggleNoise}
+          title="Brown noise while the timer runs">
+          {noiseOn ? '♪ Noise on' : '♪ Noise off'}
+        </button>
+        {running && noiseOn && !playing ? (
+          <button className="btn soft" onClick={() => { brown.start(); setPlaying(true) }}>Resume sound</button>
+        ) : running ? (
+          <button className="btn ghost" onClick={() => setEndAt(null)}>Stop</button>
+        ) : (
+          <button className="btn primary" onClick={start}>Start</button>
+        )}
+      </div>
     </div>
   )
 }
+
+// Brown noise: integrated white noise, generated locally (no audio file, no network).
+const brown = (() => {
+  let ctx = null, src = null, gain = null
+  return {
+    start() {
+      try {
+        ctx = ctx || new (window.AudioContext || window.webkitAudioContext)()
+        ctx.resume()
+        if (src) return
+        const len = ctx.sampleRate * 4
+        const buf = ctx.createBuffer(1, len, ctx.sampleRate)
+        const d = buf.getChannelData(0)
+        let last = 0
+        for (let i = 0; i < len; i++) {
+          last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02
+          d[i] = last * 3.5
+        }
+        src = ctx.createBufferSource(); src.buffer = buf; src.loop = true
+        gain = ctx.createGain(); gain.gain.setValueAtTime(0.0001, ctx.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.6, ctx.currentTime + 1.5)
+        src.connect(gain); gain.connect(ctx.destination); src.start()
+      } catch { /* no audio */ }
+    },
+    stop() {
+      if (!src || !ctx) return
+      const s = src, g = gain
+      src = null
+      try {
+        g.gain.setValueAtTime(g.gain.value, ctx.currentTime)
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6)
+        s.stop(ctx.currentTime + 0.7)
+      } catch { /* ignore */ }
+    },
+  }
+})()
 
 function chime() {
   try {

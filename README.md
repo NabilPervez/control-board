@@ -5,9 +5,9 @@ A calm, offline app for one daily habit: sort what's on your mind into **what I 
 Built for the alternating routine: **Plan day** (sort + write actions) → **Do day** (execute) → repeat. Missed a day? Menu → *Restart cycle*. No catch-up.
 
 ## Using it
-1. **Plan tab** — type a thought, tap *I can control this* or *I can't*. Can't-control items go to *Let it go* (tap *Release* when you've let them go).
+1. **Plan tab** — type a thought and press Enter (or *Dump it*) to sort later, or tap *Can control* / *Can't* right away. Sort the *To sort* list whenever you're ready. Can't-control items go to *Let it go* (tap *Release* when you've let them go).
 2. Tap **+ Action** on anything you can control. It becomes a card in To Do.
-3. **Do tab** — hit *Start* on the 45-minute timer, then move cards **To Do → In Progress → Done**.
+3. Start the **45-minute timer** on either tab (brown noise plays while it runs; toggle with ♪). On the **Do tab** move cards **To Do → In Progress → Done**.
 4. Menu (⋯) → **Export backup** now and then. Everything lives only on this device.
 
 Install it: Android shows an *Install* banner; on iPhone tap Share → *Add to Home Screen*.

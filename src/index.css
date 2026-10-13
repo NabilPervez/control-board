@@ -74,7 +74,19 @@ h2 { font-size: 15px; margin: 24px 0 10px; display: flex; align-items: center; g
 .quick { display: flex; gap: 8px; margin: 16px 0; }
 .quick input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--surface-lowest); border-radius: 99px; padding: 0 18px; min-height: 44px; }
 
-.board { display: grid; grid-auto-flow: column; grid-auto-columns: 86%; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 0 16px 8px; }
+.board { display: grid; gap: 12px; }
+.seg { display: flex; gap: 4px; background: var(--surface-variant); border-radius: 99px; padding: 4px; margin-bottom: 12px; position: sticky; top: 8px; z-index: 5; }
+.seg button { flex: 1; border: 0; background: none; border-radius: 99px; min-height: 44px; font-weight: 700; font-size: 14px; color: var(--text-2); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.seg button.on { background: var(--surface-lowest); color: var(--text); box-shadow: var(--shadow); }
+.seg .count { padding: 1px 7px; }
+@media (max-width: 819px) {
+  .col { display: none; }
+  .col.active { display: block; }
+  .col-head h2, .col-head > .count { display: none; }   /* tabs already name the column */
+  .col-head { min-height: 12px; }
+  .seg button { white-space: nowrap; font-size: 13px; }
+  .seg .full { display: none; }
+}
 .col { scroll-snap-align: start; background: var(--surface-variant); border-radius: var(--radius); padding: 4px 12px 12px; min-height: 240px; transition: outline-color .15s; outline: 2px dashed transparent; }
 .col.over { outline-color: var(--primary); }
 .col-head { display: flex; align-items: center; gap: 8px; }
@@ -88,7 +100,8 @@ h2 { font-size: 15px; margin: 24px 0 10px; display: flex; align-items: center; g
 .kcard p { margin: 0 0 10px; font-size: 15px; line-height: 1.4; }
 .kactions { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
 @media (min-width: 820px) {
-  .board { grid-auto-flow: initial; grid-template-columns: repeat(3, 1fr); overflow: visible; margin: 0; padding: 0; }
+  .board { grid-template-columns: repeat(3, 1fr); }
+  .seg { display: none; }
 }
 
 .bottom { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: 8px; padding: 8px 16px calc(8px + var(--safe-b));
@@ -110,3 +123,31 @@ h2 { font-size: 15px; margin: 24px 0 10px; display: flex; align-items: center; g
 .banner .chip { color: var(--surface); border-color: rgba(255,255,255,.3); }
 @keyframes up { from { transform: translate(-50%, 8px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* --- v1.1: dump inbox, shared timer, mobile ergonomics --- */
+.btn.soft { background: var(--primary-container); color: var(--on-primary-container); }
+.dump-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dump-actions .wide { grid-column: 1 / -1; }
+.timer { flex-wrap: wrap; margin-bottom: 16px; }
+.timer.running { border-color: var(--secondary-container); }
+.timer-main { flex: 1; min-width: 120px; }
+.timer-btns { display: flex; gap: 8px; align-items: center; }
+.kactions .chip, .item-actions .chip { min-height: 44px; min-width: 44px; }
+@media (max-width: 480px) {
+  .app { padding-left: 12px; padding-right: 12px; }
+  h1 { font-size: 24px; }
+  .timer { padding: 12px; gap: 12px; }
+  .time { font-size: 28px; }
+  .timer-btns { width: 100%; }
+  .timer-btns > * { flex: 1; }
+  .item { flex-wrap: wrap; padding: 8px 8px 8px 14px; }
+  .item-text, .item input { flex-basis: 100%; }
+  .item-actions { width: 100%; justify-content: flex-end; }
+  .kcard p { font-size: 16px; }
+  .kactions .chip.strong { flex: 1; }
+  .dump textarea { font-size: 17px; }
+}
+@media (min-width: 820px) { .plan { max-width: 720px; } }
+
+.seg .short { display: none; }
+@media (max-width: 819px) { .seg .short { display: inline; } }
